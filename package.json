@@ -1,0 +1,18 @@
+{
+  "name": "bill-splitter",
+  "version": "1.0.0",
+  "description": "It’s a smart, frictionless group expense splitter designed to handle complex bills without the headache of manual itemization. Instead of forcing you to log every single line item on a receipt, it operates on an \"Exception-Based\" model. You just input the total bill and tag the outliers (the things not everyone shared), and the engine dynamically calculates the exact mathematical breakdown for the whole group.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}

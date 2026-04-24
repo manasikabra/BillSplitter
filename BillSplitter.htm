@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bill Splitter</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        html {
+            /* This shrinks the entire UI proportionally since Tailwind uses rem units based on root font size (default is 16px) */
+            font-size: 14px; 
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInFromBottom {
+            from {
+                transform: translateY(1rem);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .animate-in {
+            animation-duration: 300ms;
+            animation-fill-mode: both;
+            animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fade-in {
+            animation-name: fadeIn;
+        }
+
+        .slide-in-from-bottom-4 {
+            animation-name: slideInFromBottom;
+        }
+
+        .slide-in-from-bottom-8 {
+            animation-name: slideInFromBottom;
+        }
+
+        .zoom-in-95 {
+            animation-name: zoomIn;
+        }
+    </style>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body
+    class="bg-gray-50 text-gray-900 font-sans selection:bg-violet-100 selection:text-violet-900 overflow-hidden h-screen w-screen">
+
+    <div id="root" class="h-full w-full"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        // API key is securely handled by the backend server
+
+        // --- Custom SVG Icon Components (Replacing lucide-react) ---
+        const IconSvg = ({ children, className, fill = "none" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+
+        const Plus = (p) => <IconSvg {...p}><path d="M5 12h14" /><path d="M12 5v14" /></IconSvg>;
+        const Trash2 = (p) => <IconSvg {...p}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></IconSvg>;
+        const Users = (p) => <IconSvg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></IconSvg>;
+        const Receipt = (p) => <IconSvg {...p}><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /><path d="M12 17.5v-11" /></IconSvg>;
+        const Copy = (p) => <IconSvg {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></IconSvg>;
+        const Camera = (p) => <IconSvg {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" /><circle cx="12" cy="13" r="3" /></IconSvg>;
+        const IndianRupee = (p) => <IconSvg {...p}><path d="M6 3h12" /><path d="M6 8h12" /><path d="m6 13 8.5 8" /><path d="M6 13h3" /><path d="M9 13c6.667 0 6.667-10 0-10" /></IconSvg>;
+        const ChevronRight = (p) => <IconSvg {...p}><path d="m9 18 6-6-6-6" /></IconSvg>;
+        const ChevronLeft = (p) => <IconSvg {...p}><path d="m15 18-6-6 6-6" /></IconSvg>;
+        const AlertCircle = (p) => <IconSvg {...p}><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></IconSvg>;
+        const Loader2 = (p) => <IconSvg {...p}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></IconSvg>;
+        const Leaf = (p) => <IconSvg {...p}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" /><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" /></IconSvg>;
+        const Beef = (p) => <IconSvg {...p}><circle cx="12.5" cy="8.5" r="2.5" /><path d="M12.5 2a6.5 6.5 0 0 0-6.22 4.6c-1.1 3.13-.78 3.9-3.18 6.08A3 3 0 0 0 5 18c4 0 8.4-1.8 11.4-4.3A6.5 6.5 0 0 0 12.5 2Z" /><path d="m18.5 6 2.19 4.5a6.48 6.48 0 0 1 .31 2 6.49 6.49 0 0 1-2.6 5.2C15.4 20.2 11 22 7 22a3 3 0 0 1-2.68-1.66L2.4 16.5" /></IconSvg>;
+        const Beer = (p) => <IconSvg {...p}><path d="M17 11h1.2a3.24 3.24 0 0 1 3.18 3.06l.32 3A3.24 3.24 0 0 1 18.52 20H17" /><path d="M7 8V6a4 4 0 1 1 8 0v2" /><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2Z" /><path d="M9 12v4" /><path d="M13 12v4" /></IconSvg>;
+        const Coffee = (p) => <IconSvg {...p}><path d="M10 2v2" /><path d="M14 2v2" /><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1" /><path d="M6 2v2" /></IconSvg>;
+        const CheckSquare = (p) => <IconSvg {...p}><polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></IconSvg>;
+        const X = (p) => <IconSvg {...p}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></IconSvg>;
+        const UserPlus = (p) => <IconSvg {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" x2="19" y1="8" y2="14" /><line x1="22" x2="16" y1="11" y2="11" /></IconSvg>;
+        const Zap = (p) => <IconSvg {...p}><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></IconSvg>;
+        const Download = (p) => <IconSvg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></IconSvg>;
+
+        // --- Helper: Compress Image ---
+        const compressImage = (base64Str) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = base64Str;
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1000;
+                    const MAX_HEIGHT = 1000;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                };
+            });
+        };
+
+        // --- Sub-Components ---
+        const StepPeople = ({ people, addPerson, addMultiplePeople, updatePerson, removePerson }) => {
+            const [targetPartySize, setTargetPartySize] = useState('');
+
+            return (
+                <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 pb-32">
+                    <div>
+                        <div className="flex justify-between items-center mb-1">
+                            <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
+                                <Users className="w-6 h-6 text-violet-500" />
+                                Who's Eating?
+                            </h2>
+                            <button onClick={addPerson} className="bg-violet-100 text-violet-600 p-2.5 rounded-full hover:bg-violet-200 transition-colors">
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <p className="text-[11px] text-gray-400 font-medium ml-8">
+                            ↳ Auto-fill empty <strong>slots</strong> below, or add names manually via <strong>➕</strong>
+                        </p>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm mb-6 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-violet-400 rounded-l-3xl"></div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="bg-violet-50 p-1.5 rounded-lg">
+                                <Zap className="w-4 h-4 text-violet-500" />
+                            </div>
+                            <h3 className="text-sm font-semibold text-gray-700">Quick Auto-fill</h3>
+                        </div>
+                        <div className="flex gap-3">
+                            <input
+                                type="number"
+                                value={targetPartySize}
+                                onChange={(e) => setTargetPartySize(e.target.value)}
+                                placeholder={`Total people? (Now ${people.length})`}
+                                className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl font-medium text-gray-800 px-4 py-3 focus:ring-2 focus:ring-violet-200 focus:bg-white transition-all outline-none"
+                            />
+                            <button
+                                onClick={() => {
+                                    const target = parseInt(targetPartySize) || 0;
+                                    if (target > people.length) {
+                                        const diff = target - people.length;
+                                        const newPeople = Array.from({ length: diff }).map((_, i) => ({
+                                            id: Math.random().toString(36).substr(2, 9),
+                                            name: `Person ${people.length + i + 1}`,
+                                            isVeg: true,
+                                            isDrinker: false
+                                        }));
+                                        addMultiplePeople(newPeople);
+                                        setTargetPartySize('');
+                                    }
+                                }}
+                                className="bg-violet-600 text-white px-5 rounded-2xl font-semibold text-sm hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200 whitespace-nowrap"
+                            >
+                                Add Slots
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-4">
+                        {people.map(person => (
+                            <div key={person.id} className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 space-y-4 transition-all hover:shadow-md hover:border-gray-200">
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="text"
+                                        value={person.name}
+                                        onChange={(e) => updatePerson(person.id, 'name', e.target.value)}
+                                        placeholder="Enter name..."
+                                        className="flex-1 bg-transparent border-none focus:ring-0 font-semibold text-gray-800 text-lg p-0 placeholder:text-gray-300 outline-none"
+                                    />
+                                    <button onClick={() => removePerson(person.id)} className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors">
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => updatePerson(person.id, 'isVeg', !person.isVeg)}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-semibold transition-all border ${person.isVeg
+                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                                : 'bg-rose-50 text-rose-700 border-rose-100'
+                                            }`}
+                                    >
+                                        {person.isVeg ? <Leaf className="w-4 h-4" /> : <Beef className="w-4 h-4" />}
+                                        {person.isVeg ? 'Veg' : 'Non-Veg'}
+                                    </button>
+
+                                    <button
+                                        onClick={() => updatePerson(person.id, 'isDrinker', !person.isDrinker)}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-semibold transition-all border ${person.isDrinker
+                                                ? 'bg-amber-50 text-amber-700 border-amber-100'
+                                                : 'bg-sky-50 text-sky-700 border-sky-100'
+                                            }`}
+                                    >
+                                        {person.isDrinker ? <Beer className="w-4 h-4" /> : <Coffee className="w-4 h-4" />}
+                                        {person.isDrinker ? 'Drinks' : 'No Drinks'}
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const StepItems = ({
+            items, people, quickTotalBill, setQuickTotalBill, addItem, updateItem,
+            updateItemsBulk, removeItem, removeItemsBulk, handleFileUpload,
+            isProcessingImage, error, selectedIds, setSelectedIds
+        }) => {
+            const toggleSelect = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+            const toggleSelectAll = () => (selectedIds.length === items.length && items.length > 0) ? setSelectedIds([]) : setSelectedIds(items.map(item => item.id));
+
+            const handleBulkAction = (type) => {
+                let ids = [];
+                if (type === 'everyone') ids = people.map(p => p.id);
+                else if (type === 'veg') ids = people.filter(p => p.isVeg).map(p => p.id);
+                else if (type === 'non-veg') ids = people.filter(p => !p.isVeg).map(p => p.id);
+                else if (type === 'drinkers') ids = people.filter(p => p.isDrinker).map(p => p.id);
+                else if (type === 'zen') ids = people.filter(p => !p.isDrinker).map(p => p.id);
+                updateItemsBulk(selectedIds, 'consumerIds', ids);
+                setSelectedIds([]);
+            };
+
+            return (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 pb-48">
+                    <div className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden">
+                        <div className="absolute top-0 w-full h-1.5 bg-violet-500 left-0"></div>
+                        <h3 className="text-sm font-semibold text-gray-500 mb-1">Total Restaurant Bill</h3>
+                        <p className="text-[11px] text-gray-400 font-medium mb-4">↳ Enter final amount (including all taxes & tips)</p>
+                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:ring-2 focus-within:ring-violet-100 focus-within:border-violet-300 transition-all">
+                            <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                                <IndianRupee className="w-6 h-6 text-violet-500" />
+                            </div>
+                            <input
+                                type="number"
+                                value={quickTotalBill}
+                                onChange={(e) => setQuickTotalBill(e.target.value)}
+                                placeholder="0.00"
+                                className="flex-1 bg-transparent border-none focus:ring-0 text-3xl font-bold text-gray-900 p-0 placeholder:text-gray-300 outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <div className="flex flex-col gap-1">
+                                    <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800 leading-none">
+                                        <Receipt className="w-5 h-5 text-violet-500" />
+                                        Add Exceptions
+                                    </h2>
+                                    <p className="text-xs text-gray-500 font-medium ml-7">Specific items not shared by everyone</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <label className="bg-violet-50 text-violet-600 p-3 rounded-full cursor-pointer hover:bg-violet-100 transition-colors border border-violet-100">
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+                                        <Camera className="w-5 h-5" />
+                                    </label>
+                                    <button onClick={addItem} className="bg-violet-600 text-white p-3 rounded-full hover:bg-violet-700 transition-colors shadow-md shadow-violet-200">
+                                        <Plus className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-gray-400 font-medium mt-1 ml-7">
+                                ↳ Scan bill picture (<strong>📷</strong>) or add manually (<strong>➕</strong>)
+                            </p>
+                        </div>
+
+                        {items.length > 0 && (
+                            <div className="flex justify-start mb-1">
+                                <button
+                                    onClick={toggleSelectAll}
+                                    className="text-xs font-semibold text-violet-600 bg-violet-50 px-3 py-1.5 rounded-xl hover:bg-violet-100 transition-colors"
+                                >
+                                    {selectedIds.length === items.length ? 'Deselect All' : 'Select All Items'}
+                                </button>
+                            </div>
+                        )}
+
+                        {isProcessingImage && (
+                            <div className="bg-violet-50 border border-violet-100 p-4 rounded-2xl flex items-center gap-3 text-violet-700 animate-pulse">
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <p className="text-sm font-medium">Scanning receipt with AI...</p>
+                            </div>
+                        )}
+
+                        {error && (
+                            <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex items-center gap-3 text-rose-700 animate-in fade-in zoom-in-95">
+                                <AlertCircle className="w-5 h-5 shrink-0" />
+                                <p className="text-sm font-medium">{error}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid gap-4">
+                        {items.map(item => (
+                            <div key={item.id} className={`bg-white p-4 rounded-3xl shadow-sm border transition-all flex gap-3 ${selectedIds.includes(item.id) ? 'border-violet-300 bg-violet-50/30 shadow-md' : 'border-gray-100'}`}>
+                                <button
+                                    onClick={() => toggleSelect(item.id)}
+                                    className={`mt-1.5 shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-violet-600 border-violet-600 text-white' : 'border-gray-300 text-transparent hover:border-violet-300'
+                                        }`}
+                                >
+                                    <CheckSquare className="w-4 h-4" />
+                                </button>
+
+                                <div className="flex-1 space-y-4 overflow-hidden">
+                                    <div className="flex gap-2 items-start justify-between">
+                                        <input
+                                            type="text"
+                                            value={item.name}
+                                            onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                                            placeholder="Item Name"
+                                            className="flex-1 font-semibold text-gray-800 bg-transparent border-b-2 border-transparent focus:border-violet-300 focus:ring-0 py-1 transition-colors text-lg p-0 outline-none placeholder:text-gray-300"
+                                        />
+                                        <div className="flex flex-col items-end gap-2">
+                                            <div className="flex items-center bg-gray-50 rounded-2xl px-3 py-1.5 border border-gray-100 focus-within:border-violet-300 focus-within:bg-white transition-all">
+                                                <span className="text-gray-400 mr-1 font-semibold">₹</span>
+                                                <input
+                                                    type="number"
+                                                    value={item.price || ''}
+                                                    onChange={(e) => updateItem(item.id, 'price', e.target.value)}
+                                                    placeholder="0"
+                                                    className="w-16 bg-transparent border-none focus:ring-0 text-right font-bold text-gray-800 p-0 outline-none"
+                                                />
+                                            </div>
+                                            <button onClick={() => removeItem(item.id)} className="text-gray-300 hover:text-rose-500 transition-colors p-1">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5 bg-gray-50/80 p-1.5 rounded-2xl border border-gray-100 overflow-x-auto no-scrollbar">
+                                        <button onClick={() => updateItem(item.id, 'consumerIds', people.map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-violet-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-violet-50 hover:border-violet-100"><UserPlus className="w-4 h-4" /><span className="text-[10px] font-semibold">All</span></button>
+                                        <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => p.isVeg).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-emerald-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-emerald-50 hover:border-emerald-100"><Leaf className="w-4 h-4" /><span className="text-[10px] font-semibold">Veg</span></button>
+                                        <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => !p.isVeg).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-rose-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-rose-50 hover:border-rose-100"><Beef className="w-4 h-4" /><span className="text-[10px] font-semibold">NV</span></button>
+                                        <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => p.isDrinker).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-amber-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-amber-50 hover:border-amber-100"><Beer className="w-4 h-4" /><span className="text-[10px] font-semibold">Drinks</span></button>
+                                        <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => !p.isDrinker).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-sky-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-sky-50 hover:border-sky-100"><Coffee className="w-4 h-4" /><span className="text-[10px] font-semibold">Zen</span></button>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-50">
+                                        {people.map(person => (
+                                            <button
+                                                key={person.id}
+                                                onClick={() => {
+                                                    const exists = item.consumerIds.includes(person.id);
+                                                    const newList = exists ? item.consumerIds.filter(id => id !== person.id) : [...item.consumerIds, person.id];
+                                                    updateItem(item.id, 'consumerIds', newList);
+                                                }}
+                                                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 ${item.consumerIds.includes(person.id)
+                                                        ? 'bg-violet-600 text-white border-violet-600 shadow-sm shadow-violet-200'
+                                                        : 'bg-white text-gray-500 border-gray-200 hover:border-violet-300 hover:bg-violet-50'
+                                                    }`}
+                                            >
+                                                <div className="flex gap-1 shrink-0 opacity-80">
+                                                    {person.isVeg ? <Leaf className="w-3 h-3" /> : <Beef className="w-3 h-3" />}
+                                                    {person.isDrinker ? <Beer className="w-3 h-3" /> : <Coffee className="w-3 h-3" />}
+                                                </div>
+                                                <span className="truncate max-w-[70px]">{person.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {item.consumerIds.length > 0 && (
+                                        <p className="text-xs text-violet-600 font-semibold bg-violet-50 inline-block px-3 py-1 rounded-lg">
+                                            <IndianRupee className="w-3 h-3 inline mr-0.5" />
+                                            {(item.price / item.consumerIds.length).toFixed(2)} each
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {selectedIds.length > 0 && (
+                        <div className="fixed bottom-32 left-4 right-4 bg-gray-900 text-white p-5 rounded-[32px] shadow-2xl animate-in slide-in-from-bottom-8 z-50 border border-gray-800">
+                            <div className="flex justify-between items-center mb-4 px-1">
+                                <p className="text-sm font-semibold text-violet-300">{selectedIds.length} item{selectedIds.length > 1 ? 's' : ''} selected</p>
+                                <button onClick={() => setSelectedIds([])} className="text-gray-400 hover:text-white transition-colors bg-gray-800 p-1.5 rounded-full"><X className="w-4 h-4" /></button>
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                <button onClick={() => handleBulkAction('everyone')} className="shrink-0 bg-gray-800 hover:bg-violet-600 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-colors">Everyone</button>
+                                <button onClick={() => handleBulkAction('veg')} className="shrink-0 bg-gray-800 hover:bg-emerald-600 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-colors">Veg</button>
+                                <button onClick={() => handleBulkAction('non-veg')} className="shrink-0 bg-gray-800 hover:bg-rose-600 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-colors">NV</button>
+                                <button onClick={() => handleBulkAction('drinkers')} className="shrink-0 bg-gray-800 hover:bg-amber-600 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-colors">Drinks</button>
+                                <button onClick={() => handleBulkAction('zen')} className="shrink-0 bg-gray-800 hover:bg-sky-600 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-colors">No Drinks</button>
+                                <button onClick={() => { removeItemsBulk(selectedIds); setSelectedIds([]); }} className="shrink-0 bg-gray-800 hover:bg-rose-500 text-rose-400 hover:text-white px-4 py-2.5 rounded-2xl text-xs font-semibold transition-colors flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const StepSummary = ({ totals, people, taxPercent, setTaxPercent, tipAmount, setTipAmount, payerId, setPayerId, copyToWhatsApp, downloadAsImage, isDownloading }) => (
+            <div className="animate-in fade-in slide-in-from-bottom-4 pb-20">
+                <div className="flex justify-between items-center mb-3 bg-white p-2 rounded-3xl border border-gray-100 shadow-sm">
+                    <h2 className="text-sm font-semibold text-gray-500 px-4">Bill Summary</h2>
+                    <div className="flex gap-2">
+                        <button onClick={copyToWhatsApp} className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-100 transition-colors active:scale-95" title="Copy WhatsApp"><Copy className="w-5 h-5" /></button>
+                        <button onClick={downloadAsImage} disabled={isDownloading} className="p-3 bg-violet-50 text-violet-600 rounded-2xl hover:bg-violet-100 transition-colors active:scale-95 disabled:opacity-50" title="Download Image">
+                            {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 mb-4 ml-1">
+                    <p className="text-[11px] text-gray-500 font-medium leading-relaxed"><span className="text-violet-500 font-bold">↳ The Math:</span> (Grand Total − Exceptions) is split equally. Then, exceptions are added back to whoever consumed them.</p>
+                </div>
+
+                <div id="summary-capture-card" className="bg-white p-8 rounded-[40px] shadow-lg shadow-gray-200/40 border border-gray-100 overflow-hidden relative">
+                    <div className="flex justify-between items-start mb-10 mt-2">
+                        <div>
+                            <h2 className="text-sm font-medium text-gray-400 mb-2">Grand Total</h2>
+                            <p className="text-5xl font-bold text-gray-900 tracking-tight">₹{totals.total.toFixed(2)}</p>
+                        </div>
+                        <div className="bg-violet-50 p-4 rounded-3xl border border-violet-100/50"><IndianRupee className="w-8 h-8 text-violet-600" /></div>
+                    </div>
+
+                    {totals.isQuickMode && totals.adjustedBill < 0 && (
+                        <div className="bg-rose-50 text-rose-600 p-4 rounded-3xl mb-8 text-sm font-semibold border border-rose-100 flex items-center gap-2"><AlertCircle className="w-5 h-5 shrink-0" />Warning: Exception items cost more than the Total Bill!</div>
+                    )}
+
+                    {totals.isQuickMode && (
+                        <div className="bg-gray-50 p-5 rounded-3xl border border-gray-100 mb-8 space-y-4">
+                            <div className="flex justify-between items-center"><span className="font-medium text-gray-500 text-sm">Total Entry</span><span className="font-semibold text-gray-800">₹{totals.quickTotalBill.toFixed(2)}</span></div>
+                            <div className="flex justify-between items-center"><span className="font-medium text-gray-500 text-sm">Exceptions</span><span className="font-semibold text-gray-800">- ₹{totals.exceptionTotal.toFixed(2)}</span></div>
+                            <div className="h-px bg-gray-200 w-full my-2"></div>
+                            <div className="flex justify-between items-center"><span className="font-semibold text-violet-600 text-sm">Base Split ({people.length} pax)</span><span className="font-bold text-violet-700 bg-violet-100 px-3 py-1.5 rounded-xl">₹{totals.baseShare.toFixed(2)} each</span></div>
+                        </div>
+                    )}
+
+                    {!totals.isQuickMode && (
+                        <div className="grid grid-cols-2 gap-4 mb-8">
+                            <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100">
+                                <p className="text-xs font-medium text-gray-500 mb-2">GST / Taxes</p>
+                                <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-gray-100 focus-within:border-violet-300 transition-colors">
+                                    <input type="number" value={taxPercent} onChange={e => setTaxPercent(e.target.value)} className="w-full bg-transparent border-none p-0 font-bold text-gray-800 focus:ring-0 text-lg outline-none" />
+                                    <span className="text-gray-400 font-bold ml-1">%</span>
+                                </div>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100">
+                                <p className="text-xs font-medium text-gray-500 mb-2">Tip Amount</p>
+                                <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-gray-100 focus-within:border-violet-300 transition-colors">
+                                    <span className="text-gray-400 font-bold mr-1">₹</span>
+                                    <input type="number" value={tipAmount} onChange={e => setTipAmount(e.target.value)} className="w-full bg-transparent border-none p-0 font-bold text-gray-800 focus:ring-0 text-lg text-right outline-none" />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="bg-gray-900 text-white p-5 rounded-3xl mb-10 flex items-center justify-between shadow-lg shadow-gray-200">
+                        <div className="flex-1">
+                            <p className="text-xs font-medium text-gray-400 mb-2">Who Paid?</p>
+                            <select value={payerId} onChange={e => setPayerId(e.target.value)} className="w-full bg-transparent border-none p-0 font-semibold text-white focus:ring-0 text-lg appearance-none cursor-pointer outline-none">
+                                <option value="" className="text-gray-900">Select person...</option>
+                                {people.map(p => <option key={p.id} value={p.id} className="text-gray-900">{p.name}</option>)}
+                            </select>
+                        </div>
+                        <div className="bg-gray-800 p-3 rounded-2xl ml-4"><Users className="w-5 h-5 text-gray-300" /></div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-gray-400 text-xs mb-4">INDIVIDUAL SHARES</h3>
+                        {totals.results.map(res => (
+                            <div key={res.id} className="bg-white p-5 rounded-[28px] border border-gray-100 shadow-sm flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl transition-all ${res.isVeg ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                                        {res.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex flex-col justify-center">
+                                        <p className="font-bold text-gray-800 text-lg mb-1">{res.name}</p>
+                                        {totals.isQuickMode && res.extra > 0 && <p className="text-xs text-gray-400 font-medium mb-1">Base: ₹{res.base.toFixed(0)} + Excp: ₹{res.extra.toFixed(0)}</p>}
+                                        {payerId && res.id !== payerId && res.total > 0 && (
+                                            <div className="flex items-center gap-1.5 bg-violet-50 px-2 py-1 rounded-lg mt-1 w-fit">
+                                                <Zap className="w-3 h-3 text-violet-500 fill-violet-500" />
+                                                <p className="text-[10px] text-violet-600 font-semibold">Owes {people.find(p => p.id === payerId)?.name}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xl font-bold text-gray-900">₹{res.total.toFixed(2)}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-10 pt-6 border-t border-dashed border-gray-200 text-center">
+                        <p className="text-xs font-medium text-gray-400 tracking-wider">Generated via Bill Splitter</p>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- Main App ---
+        const App = () => {
+            const [step, setStep] = useState(1);
+            const [people, setPeople] = useState([
+                { id: '1', name: 'Manasi', isVeg: true, isDrinker: false },
+                { id: '2', name: 'Adi', isVeg: false, isDrinker: true },
+            ]);
+            const [items, setItems] = useState([]);
+            const [selectedIds, setSelectedIds] = useState([]);
+            const [quickTotalBill, setQuickTotalBill] = useState('');
+            const [taxPercent, setTaxPercent] = useState(5);
+            const [tipAmount, setTipAmount] = useState(0);
+            const [payerId, setPayerId] = useState('');
+            const [isProcessingImage, setIsProcessingImage] = useState(false);
+            const [isDownloading, setIsDownloading] = useState(false);
+            const [error, setError] = useState(null);
+
+            const fetchWithRetry = async (url, options, retries = 3, backoff = 1000) => {
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 20000);
+                        const response = await fetch(url, { ...options, signal: controller.signal });
+                        clearTimeout(timeoutId);
+                        if (response.ok) return response;
+                        if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+                            const errData = await response.json().catch(() => ({}));
+                            throw new Error(`Scanner Error (${response.status}): ${errData.error?.message || response.statusText}`);
+                        }
+                    } catch (err) {
+                        if (err.name !== 'AbortError' && i === retries - 1) throw err;
+                    }
+                    await new Promise(res => setTimeout(res, backoff * Math.pow(1.5, i)));
+                }
+                throw new Error("Network timeout. Check your connection.");
+            };
+
+            const handleFileUpload = async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                setIsProcessingImage(true);
+                setError(null);
+                try {
+                    const reader = new FileReader();
+                    const rawBase64 = await new Promise((resolve) => {
+                        reader.onload = () => resolve(reader.result);
+                        reader.readAsDataURL(file);
+                    });
+                    const compressedBase64 = await compressImage(rawBase64);
+                    const userPrompt = `Analyze this restaurant bill/receipt carefully.
+1. Extract every individual food or drink item ordered.
+2. Provide the final total price for each item (if quantity > 1, extract the listed total for that line, not just the unit price).
+3. STRICTLY EXCLUDE: taxes (GST, CGST, SGST, VAT), service charges, packaging fees, tips, discounts, subtotals, and grand totals.
+4. Format prices as pure numbers (e.g., 150.50), no commas or currency symbols.`;
+                    const response = await fetchWithRetry(
+                        '/api/scan',
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{
+                                    role: "user",
+                                    parts: [{ text: userPrompt }, { inlineData: { mimeType: "image/jpeg", data: compressedBase64.split(',')[1] } }]
+                                }],
+                                generationConfig: {
+                                    responseMimeType: "application/json",
+                                    responseSchema: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            items: {
+                                                type: "ARRAY",
+                                                items: {
+                                                    type: "OBJECT",
+                                                    properties: { name: { type: "STRING" }, price: { type: "NUMBER" } },
+                                                    required: ["name", "price"]
+                                                }
+                                            }
+                                        },
+                                        required: ["items"]
+                                    }
+                                }
+                            })
+                        }
+                    );
+                    const result = await response.json();
+                    let rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{"items":[]}';
+                    rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const parsed = JSON.parse(rawText);
+                    if (parsed.items && Array.isArray(parsed.items)) {
+                        const newItems = parsed.items.map(item => ({
+                            id: Math.random().toString(36).substr(2, 9),
+                            name: item.name,
+                            price: parseFloat(item.price) || 0,
+                            consumerIds: people.map(p => p.id),
+                            type: 'veg'
+                        }));
+                        setItems(prev => [...prev, ...newItems]);
+                    }
+                } catch (err) {
+                    console.error("Scan error:", err);
+                    setError(`Error: ${err.message || "Failed to scan."}`);
+                } finally {
+                    setIsProcessingImage(false);
+                    e.target.value = null;
+                }
+            };
+
+            const addPerson = () => setPeople(p => [...p, { id: Math.random().toString(36).substr(2, 9), name: '', isVeg: true, isDrinker: false }]);
+            const addMultiplePeople = (newPeople) => setPeople(p => [...p, ...newPeople]);
+            const updatePerson = (id, field, value) => setPeople(p => p.map(per => per.id === id ? { ...per, [field]: value } : per));
+            const removePerson = (id) => {
+                setPeople(p => p.filter(per => per.id !== id));
+                setItems(its => its.map(it => ({ ...it, consumerIds: it.consumerIds.filter(cid => cid !== id) })));
+            };
+
+            const addItem = () => setItems(it => [...it, { id: Math.random().toString(36).substr(2, 9), name: '', price: 0, consumerIds: people.map(p => p.id), type: 'veg' }]);
+            const updateItem = (id, field, value) => setItems(it => it.map(item => item.id === id ? { ...item, [field]: value } : item));
+            const updateItemsBulk = (ids, field, value) => setItems(it => it.map(item => ids.includes(item.id) ? { ...item, [field]: value } : item));
+            const removeItem = (id) => { setItems(it => it.filter(item => id !== item.id)); setSelectedIds(prev => prev.filter(i => i !== id)); };
+            const removeItemsBulk = (ids) => { setItems(it => it.filter(item => !ids.includes(item.id))); setSelectedIds([]); };
+
+            const totals = useMemo(() => {
+                const isQuickModeActive = parseFloat(quickTotalBill) > 0;
+                if (isQuickModeActive) {
+                    const totalBill = parseFloat(quickTotalBill) || 0;
+                    const exceptionTotal = items.reduce((acc, item) => acc + (parseFloat(item.price) || 0), 0);
+                    const adjustedBill = totalBill - exceptionTotal;
+                    const baseShare = people.length > 0 ? adjustedBill / people.length : 0;
+                    const personCosts = {};
+                    people.forEach(p => { personCosts[p.id] = baseShare; });
+                    const itemBreakdown = items.map(item => {
+                        const price = parseFloat(item.price) || 0;
+                        const count = item.consumerIds.length;
+                        const share = count > 0 ? price / count : 0;
+                        item.consumerIds.forEach(cid => { if (personCosts[cid] !== undefined) personCosts[cid] += share; });
+                        return { ...item, share };
+                    });
+                    const results = people.map(p => ({ ...p, base: baseShare, extra: personCosts[p.id] - baseShare, total: personCosts[p.id] }));
+                    return { subtotal: totalBill, taxAmount: 0, total: totalBill, results, itemBreakdown, isQuickMode: true, exceptionTotal, adjustedBill, baseShare, quickTotalBill: totalBill };
+                } else {
+                    const subtotal = items.reduce((acc, item) => acc + (parseFloat(item.price) || 0), 0);
+                    const taxAmount = (subtotal * taxPercent) / 100;
+                    const totalWithAdjustments = subtotal + taxAmount + parseFloat(tipAmount || 0);
+                    const personCosts = {};
+                    people.forEach(p => { personCosts[p.id] = 0; });
+                    const itemBreakdown = items.map(item => {
+                        const price = parseFloat(item.price) || 0;
+                        const count = item.consumerIds.length;
+                        const share = count > 0 ? price / count : 0;
+                        item.consumerIds.forEach(cid => { if (personCosts[cid] !== undefined) personCosts[cid] += share; });
+                        return { ...item, share };
+                    });
+                    const grandTotal = Object.values(personCosts).reduce((a, b) => a + b, 0);
+                    const results = people.map(p => {
+                        const baseCost = personCosts[p.id];
+                        const proportion = grandTotal > 0 ? baseCost / grandTotal : 0;
+                        const extra = (taxAmount + parseFloat(tipAmount || 0)) * proportion;
+                        return { ...p, base: baseCost, extra: extra, total: baseCost + extra };
+                    });
+                    return { subtotal, taxAmount, total: totalWithAdjustments, results, itemBreakdown, isQuickMode: false };
+                }
+            }, [items, people, taxPercent, tipAmount, quickTotalBill]);
+
+            const copyToWhatsApp = () => {
+                let text = `🍽️ *Bill Summary*\n\n`;
+                totals.results.forEach(res => { text += `*${res.name}*: ₹${res.total.toFixed(2)}\n`; });
+                if (payerId) {
+                    const payerName = people.find(p => p.id === payerId)?.name;
+                    text += `\n💰 *Settle Up:*`;
+                    totals.results.forEach(res => {
+                        if (res.id !== payerId && res.total > 0) text += `\n${res.name} → Pay ${payerName} ₹${res.total.toFixed(2)}`;
+                    });
+                }
+                text += `\n\n━━━━━━━━━━━━━━\n*Total Bill:* ₹${totals.total.toFixed(2)}`;
+                const tempInput = document.createElement('textarea');
+                tempInput.value = text;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+            };
+
+            const downloadAsImage = async () => {
+                if (typeof window.html2canvas === 'undefined') return;
+                setIsDownloading(true);
+                const mainEl = document.getElementById('main-content-scroll');
+                if (mainEl) mainEl.scrollTop = 0;
+                try {
+                    const element = document.getElementById('summary-capture-card');
+                    const canvas = await window.html2canvas(element, {
+                        scale: 2,
+                        backgroundColor: '#f9fafb',
+                        borderRadius: 40,
+                        logging: false,
+                        useCORS: true,
+                        windowWidth: 375,
+                        onclone: (clonedDoc) => {
+                            const cloneCard = clonedDoc.getElementById('summary-capture-card');
+                            if (cloneCard) { cloneCard.style.width = '375px'; cloneCard.style.boxShadow = 'none'; }
+                        }
+                    });
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.download = `Bill-${new Date().getTime()}.png`;
+                    link.href = dataUrl;
+                    link.click();
+                } catch (err) {
+                    console.error("Download failed:", err);
+                } finally {
+                    setIsDownloading(false);
+                }
+            };
+
+            return (
+                <div className="max-w-md mx-auto w-full h-full flex flex-col relative bg-gray-50/50">
+                    <header className="px-6 pt-10 pb-4 flex flex-col items-center gap-2 text-center shrink-0">
+                        <div className="bg-white p-3.5 rounded-[20px] shadow-sm border border-gray-100 mb-1">
+                            <IndianRupee className="w-7 h-7 text-violet-600" />
+                        </div>
+                        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Bill Splitter</h1>
+                    </header>
+
+                    <div className="px-6 shrink-0 mt-2 mb-2">
+                        <div className="flex justify-between items-center bg-white p-1.5 rounded-[20px] border border-gray-100 shadow-sm relative overflow-hidden">
+                            <div
+                                className="absolute top-1 bottom-1 left-1 bg-violet-50 rounded-2xl transition-all duration-500 ease-out"
+                                style={{ width: 'calc(33.33% - 4px)', transform: `translateX(${(step - 1) * 100}%)` }}
+                            />
+                            {[1, 2, 3].map(s => (
+                                <button key={s} onClick={() => setStep(s)} className={`relative z-10 flex-1 py-3 text-xs font-semibold transition-colors rounded-xl ${step === s ? 'text-violet-700' : 'text-gray-400 hover:text-gray-600'}`}>
+                                    {s === 1 ? 'People' : s === 2 ? 'Items' : 'Summary'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <main id="main-content-scroll" className="flex-1 overflow-y-auto px-6 no-scrollbar pt-4">
+                        {step === 1 && <StepPeople people={people} addPerson={addPerson} addMultiplePeople={addMultiplePeople} updatePerson={updatePerson} removePerson={removePerson} />}
+                        {step === 2 && <StepItems items={items} people={people} quickTotalBill={quickTotalBill} setQuickTotalBill={setQuickTotalBill} addItem={addItem} updateItem={updateItem} updateItemsBulk={updateItemsBulk} removeItem={removeItem} removeItemsBulk={removeItemsBulk} handleFileUpload={handleFileUpload} isProcessingImage={isProcessingImage} error={error} selectedIds={selectedIds} setSelectedIds={setSelectedIds} />}
+                        {step === 3 && <StepSummary totals={totals} people={people} taxPercent={taxPercent} setTaxPercent={setTaxPercent} tipAmount={tipAmount} setTipAmount={setTipAmount} payerId={payerId} setPayerId={setPayerId} copyToWhatsApp={copyToWhatsApp} downloadAsImage={downloadAsImage} isDownloading={isDownloading} />}
+                    </main>
+
+                    <div className="px-6 py-6 shrink-0 flex gap-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent absolute bottom-0 w-full z-10">
+                        {step > 1 && <button onClick={() => setStep(step - 1)} className="flex-1 bg-white text-gray-500 border border-gray-200 py-4 rounded-[24px] flex items-center justify-center gap-2 font-semibold shadow-sm active:scale-95 transition-all hover:bg-gray-50"><ChevronLeft className="w-5 h-5" /></button>}
+                        {step < 3 && <button onClick={() => setStep(step + 1)} disabled={step === 1 && people.length === 0} className="flex-[3] bg-violet-600 text-white py-4 rounded-[24px] flex items-center justify-center gap-2 font-semibold shadow-[0_8px_30px_rgb(124,58,237,0.2)] hover:bg-violet-700 active:scale-95 disabled:opacity-30 transition-all">Continue <ChevronRight className="w-5 h-5" /></button>}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
