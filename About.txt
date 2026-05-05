@@ -1,0 +1,51 @@
+# How It Works: The Ultimate Bill Splitter
+
+No more awkward bill splitting.
+
+Most dinners aren’t equal. Some people drink, some don’t, some order extra.
+This tool handles that without making you enter everything manually.
+
+---
+
+## Flow 1: The Quick Split (For Fast & Easy Outings)
+*Best for: Simple meals, drinks with friends, or when most items are shared equally.*
+
+1. **Set the Scene:** Simply enter the total number of people involved. There's no need to painstakingly log every individual item on the receipt.
+2. **Enter the Total:** Input the final bill amount.
+3. **Log the Exceptions:** Instead of listing what everyone *did* have, only add the items that *weren't* shared by the whole group (e.g., someone's extra cocktail, a specific appetizer). Assign these exceptions to the specific people who ordered them.
+4. **Instant Calculation:** The app does the math instantly. It evenly divides the base shared amount among everyone and accurately adds the exception costs only to the relevant individuals, giving you a precise split in seconds.
+
+---
+
+## Flow 2: The Detailed Split (For Complex Group Dinners)
+*Best for: Large groups, diverse dietary preferences, and complex receipts with tips and taxes.*
+
+1. **Add People & Preferences:** Enter the names of everyone in the group. You can tag their specific preferences upfront (e.g., Veg, Non-Veg, Drinks, Zen/No Drinks) to make assigning items later incredibly fast.
+2. **Scan the Receipt:** Take a picture or upload an image of the bill. The built-in AI automatically reads the receipt and extracts all the items, quantities, and prices.
+3. **Verify with Toggles:** Quickly review the extracted list. Use simple, intuitive toggles to verify who ate or drank what, leveraging the preference tags you set earlier.
+4. **Handle Taxes & Tips:** Enter the final amount paid (the total bill) or add GST, service charges, and tips individually. The app will proportionally distribute these extra charges across everyone's individual share.
+5. **Record the Payer:** Specify who actually paid the bill so the app knows who should be reimbursed.
+6. **Get the Split:** Instantly receive a perfectly accurate breakdown of who owes what to whom. You can download the final summary as an image or copy the text directly to WhatsApp to share with the group.
+
+---
+
+## Core Steps at a Glance
+
+1. **Add People:** Enter names or just a headcount. Tag preferences (Veg/Non-Veg, Drinks/No Drinks) if desired.
+2. **Add Bill & Exceptions:** Input the total amount manually or upload a receipt for automatic AI extraction. Pinpoint the items that weren't shared by everyone.
+3. **Get the Split:** The app handles the heavy lifting—splitting the shared amount, factoring in exception costs, and detailing exactly who owes whom. Copy, share to WhatsApp, or download as an image!
+
+---
+
+## About the creator
+
+Hi, I’m Manasi.
+
+I like building small, useful tools that solve everyday problems,
+especially the ones people usually handle manually.
+
+This came from one of those. Post-dinner math that always takes longer than it should 🙂
+
+**Contact:**
+[manasi@applicativeai.com](mailto:manasi@applicativeai.com)
+https://www.linkedin.com/in/manasikabra
