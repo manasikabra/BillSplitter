@@ -164,57 +164,58 @@
 
             return (
                 <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 pb-32">
-                    <div>
-                        <div className="flex justify-between items-center mb-1">
-                            <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
-                                <Users className="w-6 h-6 text-violet-500" />
+                    <div className="bg-white p-3.5 px-4 rounded-[28px] border border-gray-100 shadow-sm">
+                        <div className="flex flex-row items-center justify-between gap-3">
+                            <h2 className="text-lg font-bold flex items-center gap-2 text-gray-800 shrink-0">
+                                <Users className="w-5 h-5 text-violet-500" />
                                 Who's Eating?
                             </h2>
-                            <button onClick={addPerson} className="bg-violet-100 text-violet-600 p-2.5 rounded-full hover:bg-violet-200 transition-colors">
-                                <Plus className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center bg-gray-50 border border-gray-100/80 rounded-xl px-2 py-1.5 focus-within:ring-2 focus-within:ring-violet-100 focus-within:border-violet-300 transition-all">
+                                    <Zap className="w-3.5 h-3.5 text-violet-500 mr-1 shrink-0" />
+                                    <input
+                                        type="number"
+                                        value={targetPartySize}
+                                        onChange={(e) => setTargetPartySize(e.target.value)}
+                                        placeholder="Size"
+                                        className="w-10 bg-transparent border-none focus:ring-0 text-xs font-bold text-gray-800 p-0 placeholder:text-gray-400 outline-none text-center"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            const target = parseInt(targetPartySize) || 0;
+                                            if (target > people.length) {
+                                                const diff = target - people.length;
+                                                const newPeople = Array.from({ length: diff }).map((_, i) => ({
+                                                    id: Math.random().toString(36).substr(2, 9),
+                                                    name: `Person ${people.length + i + 1}`,
+                                                    isVeg: true,
+                                                    isDrinker: false
+                                                }));
+                                                addMultiplePeople(newPeople);
+                                                setTargetPartySize('');
+                                            }
+                                        }}
+                                        className="ml-1.5 bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-bold px-2 py-1 rounded-lg transition-colors active:scale-95 whitespace-nowrap shadow-sm shadow-violet-100"
+                                    >
+                                        Fill
+                                    </button>
+                                </div>
+                                <div className="h-6 w-px bg-gray-200 mx-1"></div>
+                                <button
+                                    onClick={addPerson}
+                                    className="bg-violet-100 hover:bg-violet-200 text-violet-600 p-2 rounded-xl transition-all active:scale-95 flex items-center justify-center shrink-0 border border-violet-200/20"
+                                    title="Add Person"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
-                        <p className="text-[11px] text-gray-400 font-medium ml-8">
-                            ↳ Auto-fill empty <strong>slots</strong> below, or add names manually via <strong>➕</strong>
-                        </p>
                     </div>
 
-                    <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm mb-6 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-1 h-full bg-violet-400 rounded-l-3xl"></div>
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="bg-violet-50 p-1.5 rounded-lg">
-                                <Zap className="w-4 h-4 text-violet-500" />
-                            </div>
-                            <h3 className="text-sm font-semibold text-gray-700">Quick Auto-fill</h3>
-                        </div>
-                        <div className="flex gap-3">
-                            <input
-                                type="number"
-                                value={targetPartySize}
-                                onChange={(e) => setTargetPartySize(e.target.value)}
-                                placeholder={`Total people? (Now ${people.length})`}
-                                className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl font-medium text-gray-800 px-4 py-3 focus:ring-2 focus:ring-violet-200 focus:bg-white transition-all outline-none"
-                            />
-                            <button
-                                onClick={() => {
-                                    const target = parseInt(targetPartySize) || 0;
-                                    if (target > people.length) {
-                                        const diff = target - people.length;
-                                        const newPeople = Array.from({ length: diff }).map((_, i) => ({
-                                            id: Math.random().toString(36).substr(2, 9),
-                                            name: `Person ${people.length + i + 1}`,
-                                            isVeg: true,
-                                            isDrinker: false
-                                        }));
-                                        addMultiplePeople(newPeople);
-                                        setTargetPartySize('');
-                                    }
-                                }}
-                                className="bg-violet-600 text-white px-5 rounded-2xl font-semibold text-sm hover:bg-violet-700 transition-colors shadow-sm shadow-violet-200 whitespace-nowrap"
-                            >
-                                Add Slots
-                            </button>
-                        </div>
+                    <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 mb-1 ml-1">
+                        <p className="text-[11px] text-gray-500 font-medium leading-relaxed">
+                            <span className="text-violet-500 font-bold">↳ How it works:</span> Auto-fill empty slots below, or add names manually via <strong>➕</strong>.
+                        </p>
                     </div>
 
                     <div className="grid gap-4">
@@ -269,7 +270,8 @@
             isProcessingImage, error, selectedIds, setSelectedIds
         }) => {
             const toggleSelect = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-            const toggleSelectAll = () => (selectedIds.length === items.length && items.length > 0) ? setSelectedIds([]) : setSelectedIds(items.map(item => item.id));
+            const selectableItems = items.filter(i => !i.isTaxItem);
+            const toggleSelectAll = () => (selectedIds.length === selectableItems.length && selectableItems.length > 0) ? setSelectedIds([]) : setSelectedIds(selectableItems.map(item => item.id));
 
             const handleBulkAction = (type) => {
                 let ids = [];
@@ -303,15 +305,21 @@
                             </div>
                         </div>
 
+                        <div className="flex items-center gap-3 my-1">
+                            <div className="flex-1 h-px bg-gray-200"></div>
+                            <span className="text-xs font-semibold text-gray-400">and</span>
+                            <div className="flex-1 h-px bg-gray-200"></div>
+                        </div>
+
                         <div className="flex flex-col gap-3">
                             <div>
                                 <div className="flex justify-between items-center mb-1">
                                     <div className="flex flex-col gap-1">
                                         <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800 leading-none">
                                             <Receipt className="w-5 h-5 text-violet-500" />
-                                            Add Exceptions
+                                            Add Bill Image
                                         </h2>
-                                        <p className="text-xs text-gray-500 font-medium ml-7">Specific items not shared by everyone</p>
+                                        <p className="text-xs text-gray-500 font-medium ml-7">or add exceptions manually (➕)</p>
                                     </div>
                                     <div className="flex gap-2">
                                         <label className="bg-violet-50 text-violet-600 p-3 rounded-full cursor-pointer hover:bg-violet-100 transition-colors border border-violet-100">
@@ -323,18 +331,15 @@
                                         </button>
                                     </div>
                                 </div>
-                                <p className="text-[11px] text-gray-400 font-medium mt-1 ml-7">
-                                    ↳ Scan bill picture (<strong>📷</strong>) or add manually (<strong>➕</strong>)
-                                </p>
                             </div>
 
-                            {items.length > 0 && (
+                            {selectableItems.length > 0 && (
                                 <div className="flex justify-start mb-1">
                                     <button
                                         onClick={toggleSelectAll}
                                         className="text-xs font-semibold text-violet-600 bg-violet-50 px-3 py-1.5 rounded-xl hover:bg-violet-100 transition-colors"
                                     >
-                                        {selectedIds.length === items.length ? 'Deselect All' : 'Select All Items'}
+                                        {selectedIds.length === selectableItems.length ? 'Deselect All' : 'Select All Items'}
                                     </button>
                                 </div>
                             )}
@@ -355,81 +360,106 @@
                         </div>
 
                         <div className="grid gap-4">
-                            {items.map(item => (
-                                <div key={item.id} className={`bg-white p-4 rounded-3xl shadow-sm border transition-all flex gap-3 ${selectedIds.includes(item.id) ? 'border-violet-300 bg-violet-50/30 shadow-md' : 'border-gray-100'}`}>
-                                    <button
-                                        onClick={() => toggleSelect(item.id)}
-                                        className={`mt-1.5 shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-violet-600 border-violet-600 text-white' : 'border-gray-300 text-transparent hover:border-violet-300'
-                                            }`}
-                                    >
-                                        <CheckSquare className="w-4 h-4" />
-                                    </button>
-
-                                    <div className="flex-1 space-y-4 overflow-hidden">
-                                        <div className="flex gap-2 items-start justify-between">
-                                            <input
-                                                type="text"
-                                                value={item.name}
-                                                onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                                                placeholder="Item Name"
-                                                className="flex-1 font-semibold text-gray-800 bg-transparent border-b-2 border-transparent focus:border-violet-300 focus:ring-0 py-1 transition-colors text-lg p-0 outline-none placeholder:text-gray-300"
-                                            />
-                                            <div className="flex flex-col items-end gap-2">
-                                                <div className="flex items-center bg-gray-50 rounded-2xl px-3 py-1.5 border border-gray-100 focus-within:border-violet-300 focus-within:bg-white transition-all">
-                                                    <span className="text-gray-400 mr-1 font-semibold">₹</span>
-                                                    <input
-                                                        type="number"
-                                                        value={item.price || ''}
-                                                        onChange={(e) => updateItem(item.id, 'price', e.target.value)}
-                                                        placeholder="0"
-                                                        className="w-16 bg-transparent border-none focus:ring-0 text-right font-bold text-gray-800 p-0 outline-none"
-                                                    />
+                            {items.map(item => {
+                                if (item.isTaxItem) {
+                                    const isDiscount = item.price < 0;
+                                    const cardBg = isDiscount ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100';
+                                    const iconBg = isDiscount ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600';
+                                    const textClass = isDiscount ? 'text-emerald-800' : 'text-amber-800';
+                                    const subTextClass = isDiscount ? 'text-emerald-600' : 'text-amber-600';
+                                    return (
+                                        <div key={item.id} className={`${cardBg} p-4 rounded-3xl border flex items-center justify-between`}>
+                                            <div className="flex items-center gap-3">
+                                                <div className={`${iconBg} p-2 rounded-xl shrink-0`}>
+                                                    <Receipt className="w-4 h-4" />
                                                 </div>
-                                                <button onClick={() => removeItem(item.id)} className="text-gray-300 hover:text-rose-500 transition-colors p-1">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                <div>
+                                                    <p className={`font-semibold ${textClass} text-sm`}>{item.name}</p>
+                                                    <p className={`text-xs ${subTextClass} font-medium mt-0.5`}>Auto-calculated · Shared by everyone 🔒</p>
+                                                </div>
                                             </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-1.5 bg-gray-50/80 p-1.5 rounded-2xl border border-gray-100 overflow-x-auto no-scrollbar">
-                                            <button onClick={() => updateItem(item.id, 'consumerIds', people.map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-violet-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-violet-50 hover:border-violet-100"><UserPlus className="w-4 h-4" /><span className="text-[10px] font-semibold">All</span></button>
-                                            <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => p.isVeg).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-emerald-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-emerald-50 hover:border-emerald-100"><Leaf className="w-4 h-4" /><span className="text-[10px] font-semibold">Veg</span></button>
-                                            <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => !p.isVeg).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-rose-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-rose-50 hover:border-rose-100"><Beef className="w-4 h-4" /><span className="text-[10px] font-semibold">NV</span></button>
-                                            <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => p.isDrinker).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-amber-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-amber-50 hover:border-amber-100"><Beer className="w-4 h-4" /><span className="text-[10px] font-semibold">Drinks</span></button>
-                                            <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => !p.isDrinker).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-sky-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-sky-50 hover:border-sky-100"><Coffee className="w-4 h-4" /><span className="text-[10px] font-semibold">Zen</span></button>
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-50">
-                                            {people.map(person => (
-                                                <button
-                                                    key={person.id}
-                                                    onClick={() => {
-                                                        const exists = item.consumerIds.includes(person.id);
-                                                        const newList = exists ? item.consumerIds.filter(id => id !== person.id) : [...item.consumerIds, person.id];
-                                                        updateItem(item.id, 'consumerIds', newList);
-                                                    }}
-                                                    className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 ${item.consumerIds.includes(person.id)
-                                                        ? 'bg-violet-600 text-white border-violet-600 shadow-sm shadow-violet-200'
-                                                        : 'bg-white text-gray-500 border-gray-200 hover:border-violet-300 hover:bg-violet-50'
-                                                        }`}
-                                                >
-                                                    <div className="flex gap-1 shrink-0 opacity-80">
-                                                        {person.isVeg ? <Leaf className="w-3 h-3" /> : <Beef className="w-3 h-3" />}
-                                                        {person.isDrinker ? <Beer className="w-3 h-3" /> : <Coffee className="w-3 h-3" />}
-                                                    </div>
-                                                    <span className="truncate max-w-[70px]">{person.name}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                        {item.consumerIds.length > 0 && (
-                                            <p className="text-xs text-violet-600 font-semibold bg-violet-50 inline-block px-3 py-1 rounded-lg">
-                                                <IndianRupee className="w-3 h-3 inline mr-0.5" />
-                                                {(item.price / item.consumerIds.length).toFixed(2)} each
+                                            <p className={`font-bold ${textClass} text-lg shrink-0`}>
+                                                {isDiscount ? '-' : ''}₹{Math.abs(parseFloat(item.price) || 0).toFixed(2)}
                                             </p>
-                                        )}
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <div key={item.id} className={`bg-white p-4 rounded-3xl shadow-sm border transition-all flex gap-3 ${selectedIds.includes(item.id) ? 'border-violet-300 bg-violet-50/30 shadow-md' : 'border-gray-100'}`}>
+                                        <button
+                                            onClick={() => toggleSelect(item.id)}
+                                            className={`mt-1.5 shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-violet-600 border-violet-600 text-white' : 'border-gray-300 text-transparent hover:border-violet-300'
+                                                }`}
+                                        >
+                                            <CheckSquare className="w-4 h-4" />
+                                        </button>
+
+                                        <div className="flex-1 space-y-4 overflow-hidden">
+                                            <div className="flex gap-2 items-start justify-between">
+                                                <input
+                                                    type="text"
+                                                    value={item.name}
+                                                    onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                                                    placeholder="Item Name"
+                                                    className="flex-1 font-semibold text-gray-800 bg-transparent border-b-2 border-transparent focus:border-violet-300 focus:ring-0 py-1 transition-colors text-lg p-0 outline-none placeholder:text-gray-300"
+                                                />
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <div className="flex items-center bg-gray-50 rounded-2xl px-3 py-1.5 border border-gray-100 focus-within:border-violet-300 focus-within:bg-white transition-all">
+                                                        <span className="text-gray-400 mr-1 font-semibold">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            value={item.price || ''}
+                                                            onChange={(e) => updateItem(item.id, 'price', e.target.value)}
+                                                            placeholder="0"
+                                                            className="w-16 bg-transparent border-none focus:ring-0 text-right font-bold text-gray-800 p-0 outline-none"
+                                                        />
+                                                    </div>
+                                                    <button onClick={() => removeItem(item.id)} className="text-gray-300 hover:text-rose-500 transition-colors p-1">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5 bg-gray-50/80 p-1.5 rounded-2xl border border-gray-100 overflow-x-auto no-scrollbar">
+                                                <button onClick={() => updateItem(item.id, 'consumerIds', people.map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-violet-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-violet-50 hover:border-violet-100"><UserPlus className="w-4 h-4" /><span className="text-[10px] font-semibold">All</span></button>
+                                                <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => p.isVeg).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-emerald-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-emerald-50 hover:border-emerald-100"><Leaf className="w-4 h-4" /><span className="text-[10px] font-semibold">Veg</span></button>
+                                                <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => !p.isVeg).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-rose-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-rose-50 hover:border-rose-100"><Beef className="w-4 h-4" /><span className="text-[10px] font-semibold">NV</span></button>
+                                                <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => p.isDrinker).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-amber-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-amber-50 hover:border-amber-100"><Beer className="w-4 h-4" /><span className="text-[10px] font-semibold">Drinks</span></button>
+                                                <button onClick={() => updateItem(item.id, 'consumerIds', people.filter(p => !p.isDrinker).map(p => p.id))} className="flex-1 min-w-[50px] py-2 rounded-xl bg-white border border-gray-100 text-sky-600 flex flex-col items-center justify-center gap-0.5 shadow-sm active:scale-95 transition-all hover:bg-sky-50 hover:border-sky-100"><Coffee className="w-4 h-4" /><span className="text-[10px] font-semibold">Zen</span></button>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-50">
+                                                {people.map(person => (
+                                                    <button
+                                                        key={person.id}
+                                                        onClick={() => {
+                                                            const exists = item.consumerIds.includes(person.id);
+                                                            const newList = exists ? item.consumerIds.filter(id => id !== person.id) : [...item.consumerIds, person.id];
+                                                            updateItem(item.id, 'consumerIds', newList);
+                                                        }}
+                                                        className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 ${item.consumerIds.includes(person.id)
+                                                            ? 'bg-violet-600 text-white border-violet-600 shadow-sm shadow-violet-200'
+                                                            : 'bg-white text-gray-500 border-gray-200 hover:border-violet-300 hover:bg-violet-50'
+                                                            }`}
+                                                    >
+                                                        <div className="flex gap-1 shrink-0 opacity-80">
+                                                            {person.isVeg ? <Leaf className="w-3 h-3" /> : <Beef className="w-3 h-3" />}
+                                                            {person.isDrinker ? <Beer className="w-3 h-3" /> : <Coffee className="w-3 h-3" />}
+                                                        </div>
+                                                        <span className="truncate max-w-[70px]">{person.name}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            {item.consumerIds.length > 0 && (
+                                                <p className="text-xs text-violet-600 font-semibold bg-violet-50 inline-block px-3 py-1 rounded-lg">
+                                                    <IndianRupee className="w-3 h-3 inline mr-0.5" />
+                                                    {(item.price / item.consumerIds.length).toFixed(2)} each
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                     </div>
@@ -453,7 +483,7 @@
             );
         };
 
-        const StepSummary = ({ totals, people, taxPercent, setTaxPercent, tipAmount, setTipAmount, payerId, setPayerId, copyToWhatsApp, downloadAsImage, isDownloading }) => (
+        const StepSummary = ({ totals, people, tipAmount, setTipAmount, discountPercent, setDiscountPercent, payerId, setPayerId, copyToWhatsApp, downloadAsImage, isDownloading }) => (
             <div className="animate-in fade-in slide-in-from-bottom-4 pb-20">
                 <div className="flex justify-between items-center mb-3 bg-white p-2 rounded-3xl border border-gray-100 shadow-sm">
                     <h2 className="text-sm font-semibold text-gray-500 px-4">Bill Summary</h2>
@@ -485,30 +515,31 @@
                     {totals.isQuickMode && (
                         <div className="bg-gray-50 p-5 rounded-3xl border border-gray-100 mb-8 space-y-4">
                             <div className="flex justify-between items-center"><span className="font-medium text-gray-500 text-sm">Total Entry</span><span className="font-semibold text-gray-800">₹{totals.quickTotalBill.toFixed(2)}</span></div>
+                            {totals.discountAmount > 0 && <div className="flex justify-between items-center"><span className="font-medium text-emerald-600 text-sm">Discount ({discountPercent}%)</span><span className="font-semibold text-emerald-600">- ₹{totals.discountAmount.toFixed(2)}</span></div>}
                             <div className="flex justify-between items-center"><span className="font-medium text-gray-500 text-sm">Exceptions</span><span className="font-semibold text-gray-800">- ₹{totals.exceptionTotal.toFixed(2)}</span></div>
                             <div className="h-px bg-gray-200 w-full my-2"></div>
                             <div className="flex justify-between items-center"><span className="font-semibold text-violet-600 text-sm">Base Split ({people.length} pax)</span><span className="font-bold text-violet-700 bg-violet-100 px-3 py-1.5 rounded-xl">₹{totals.baseShare.toFixed(2)} each</span></div>
                         </div>
                     )}
 
-                    {!totals.isQuickMode && (
-                        <div className="grid grid-cols-2 gap-4 mb-8">
-                            <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100">
-                                <p className="text-xs font-medium text-gray-500 mb-2">GST / Taxes</p>
-                                <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-gray-100 focus-within:border-violet-300 transition-colors">
-                                    <input type="number" value={taxPercent} onChange={e => setTaxPercent(e.target.value)} className="w-full bg-transparent border-none p-0 font-bold text-gray-800 focus:ring-0 text-lg outline-none" />
-                                    <span className="text-gray-400 font-bold ml-1">%</span>
-                                </div>
+                    <div className="mb-6">
+                        <div className="bg-emerald-50 p-4 rounded-3xl border border-emerald-100">
+                            <p className="text-xs font-medium text-emerald-700 mb-2">Discount</p>
+                            <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-emerald-100 focus-within:border-emerald-300 transition-colors">
+                                <input type="number" value={discountPercent} onChange={e => setDiscountPercent(e.target.value)} placeholder="0" className="w-full bg-transparent border-none p-0 font-bold text-gray-800 focus:ring-0 text-lg outline-none" />
+                                <span className="text-emerald-500 font-bold ml-1">%</span>
                             </div>
-                            <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100">
-                                <p className="text-xs font-medium text-gray-500 mb-2">Tip Amount</p>
-                                <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-gray-100 focus-within:border-violet-300 transition-colors">
-                                    <span className="text-gray-400 font-bold mr-1">₹</span>
-                                    <input type="number" value={tipAmount} onChange={e => setTipAmount(e.target.value)} className="w-full bg-transparent border-none p-0 font-bold text-gray-800 focus:ring-0 text-lg text-right outline-none" />
-                                </div>
-                            </div>
+                            {totals.discountAmount > 0 && <p className="text-xs text-emerald-600 font-medium mt-2">Saving ₹{totals.discountAmount.toFixed(2)} on this bill 🎉</p>}
                         </div>
-                    )}
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 mb-8">
+                        <p className="text-xs font-medium text-gray-500 mb-2">Tip Amount</p>
+                        <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-gray-100 focus-within:border-violet-300 transition-colors">
+                            <span className="text-gray-400 font-bold mr-1">₹</span>
+                            <input type="number" value={tipAmount} onChange={e => setTipAmount(e.target.value)} className="w-full bg-transparent border-none p-0 font-bold text-gray-800 focus:ring-0 text-lg text-right outline-none" />
+                        </div>
+                    </div>
 
                     <div className="bg-gray-900 text-white p-5 rounded-3xl mb-10 flex items-center justify-between shadow-lg shadow-gray-200">
                         <div className="flex-1">
@@ -635,9 +666,9 @@
             const [items, setItems] = useState([]);
             const [selectedIds, setSelectedIds] = useState([]);
             const [quickTotalBill, setQuickTotalBill] = useState('');
-            const [taxPercent, setTaxPercent] = useState(5);
             const [tipAmount, setTipAmount] = useState(0);
             const [payerId, setPayerId] = useState('');
+            const [discountPercent, setDiscountPercent] = useState(0);
             const [isProcessingImage, setIsProcessingImage] = useState(false);
             const [isDownloading, setIsDownloading] = useState(false);
             const [error, setError] = useState(null);
@@ -678,8 +709,9 @@
                     const userPrompt = `Analyze this restaurant bill/receipt carefully.
 1. Extract every individual food or drink item ordered.
 2. Provide the final total price for each item (if quantity > 1, extract the listed total for that line, not just the unit price).
-3. STRICTLY EXCLUDE: taxes (GST, CGST, SGST, VAT), service charges, packaging fees, tips, discounts, subtotals, and grand totals.
-4. Format prices as pure numbers (e.g., 150.50), no commas or currency symbols.`;
+3. STRICTLY EXCLUDE from the items list: taxes (GST, CGST, SGST, VAT), service charges, packaging fees, tips, discounts, and subtotals.
+4. Also extract the single GRAND TOTAL printed at the bottom of the bill (the final payable amount).
+5. Format all prices as pure numbers (e.g., 150.50), no commas or currency symbols.`;
                     const response = await fetchWithRetry(
                         '/api/scan',
                         {
@@ -695,6 +727,7 @@
                                     responseSchema: {
                                         type: "OBJECT",
                                         properties: {
+                                            grandTotal: { type: "NUMBER" },
                                             items: {
                                                 type: "ARRAY",
                                                 items: {
@@ -704,14 +737,14 @@
                                                 }
                                             }
                                         },
-                                        required: ["items"]
+                                        required: ["items", "grandTotal"]
                                     }
                                 }
                             })
                         }
                     );
                     const result = await response.json();
-                    let rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{"items":[]}';
+                    let rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '{"items":[], "grandTotal": 0}';
                     rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
                     const parsed = JSON.parse(rawText);
                     if (parsed.items && Array.isArray(parsed.items)) {
@@ -722,7 +755,21 @@
                             consumerIds: people.map(p => p.id),
                             type: 'veg'
                         }));
-                        setItems(prev => [...prev, ...newItems]);
+                        const scannedGrandTotal = parseFloat(parsed.grandTotal) || 0;
+                        const foodTotal = newItems.reduce((acc, i) => acc + i.price, 0);
+                        const taxGap = scannedGrandTotal - foodTotal;
+                        if (scannedGrandTotal > 0) setQuickTotalBill(String(scannedGrandTotal));
+                        const allNewItems = [...newItems];
+                        if (Math.abs(taxGap) > 0.01) {
+                            allNewItems.push({
+                                id: 'tax-item',
+                                name: taxGap >= 0 ? 'Taxes & Charges' : 'Discount & Savings',
+                                price: taxGap,
+                                consumerIds: people.map(p => p.id),
+                                isTaxItem: true
+                            });
+                        }
+                        setItems(prev => [...prev.filter(i => !i.isTaxItem), ...allNewItems]);
                     }
                 } catch (err) {
                     console.error("Scan error:", err);
@@ -732,6 +779,22 @@
                     e.target.value = null;
                 }
             };
+
+            const foodItemsKey = items.filter(i => !i.isTaxItem).map(i => `${i.id}:${i.price}`).join('|');
+            useEffect(() => {
+                const taxItem = items.find(i => i.isTaxItem);
+                if (!taxItem || !quickTotalBill) return;
+                const foodTotal = items
+                    .filter(i => !i.isTaxItem)
+                    .reduce((acc, i) => acc + (parseFloat(i.price) || 0), 0);
+                const newPrice = (parseFloat(quickTotalBill) || 0) - foodTotal;
+                const newName = newPrice >= 0 ? 'Taxes & Charges' : 'Discount & Savings';
+                const hasPriceChanged = Math.abs(newPrice - (parseFloat(taxItem.price) || 0)) > 0.001;
+                const hasNameChanged = taxItem.name !== newName;
+                if (hasPriceChanged || hasNameChanged) {
+                    setItems(prev => prev.map(i => i.isTaxItem ? { ...i, name: newName, price: newPrice } : i));
+                }
+            }, [quickTotalBill, foodItemsKey]);
 
             const addPerson = () => setPeople(p => [...p, { id: Math.random().toString(36).substr(2, 9), name: '', isVeg: true, isDrinker: false }]);
             const addMultiplePeople = (newPeople) => setPeople(p => [...p, ...newPeople]);
@@ -751,43 +814,45 @@
                 const isQuickModeActive = parseFloat(quickTotalBill) > 0;
                 if (isQuickModeActive) {
                     const totalBill = parseFloat(quickTotalBill) || 0;
+                    const discountAmount = (totalBill * parseFloat(discountPercent || 0)) / 100;
+                    const effectiveTotal = totalBill - discountAmount + parseFloat(tipAmount || 0);
                     const exceptionTotal = items.reduce((acc, item) => acc + (parseFloat(item.price) || 0), 0);
-                    const adjustedBill = totalBill - exceptionTotal;
-                    const baseShare = people.length > 0 ? adjustedBill / people.length : 0;
+                    const adjustedBill = (totalBill - discountAmount) - exceptionTotal;
+                    const baseShare = people.length > 0 ? (adjustedBill + parseFloat(tipAmount || 0)) / people.length : 0;
                     const personCosts = {};
                     people.forEach(p => { personCosts[p.id] = baseShare; });
                     const itemBreakdown = items.map(item => {
                         const price = parseFloat(item.price) || 0;
-                        const count = item.consumerIds.length;
-                        const share = count > 0 ? price / count : 0;
-                        item.consumerIds.forEach(cid => { if (personCosts[cid] !== undefined) personCosts[cid] += share; });
+                        const consumers = item.consumerIds.length > 0 ? item.consumerIds : people.map(p => p.id);
+                        const share = consumers.length > 0 ? price / consumers.length : 0;
+                        consumers.forEach(cid => { if (personCosts[cid] !== undefined) personCosts[cid] += share; });
                         return { ...item, share };
                     });
                     const results = people.map(p => ({ ...p, base: baseShare, extra: personCosts[p.id] - baseShare, total: personCosts[p.id] }));
-                    return { subtotal: totalBill, taxAmount: 0, total: totalBill, results, itemBreakdown, isQuickMode: true, exceptionTotal, adjustedBill, baseShare, quickTotalBill: totalBill };
+                    return { subtotal: totalBill, discountAmount, taxAmount: 0, total: effectiveTotal, results, itemBreakdown, isQuickMode: true, exceptionTotal, adjustedBill, baseShare, quickTotalBill: totalBill };
                 } else {
                     const subtotal = items.reduce((acc, item) => acc + (parseFloat(item.price) || 0), 0);
-                    const taxAmount = (subtotal * taxPercent) / 100;
-                    const totalWithAdjustments = subtotal + taxAmount + parseFloat(tipAmount || 0);
+                    const discountAmount = (subtotal * parseFloat(discountPercent || 0)) / 100;
+                    const totalWithAdjustments = subtotal + parseFloat(tipAmount || 0) - discountAmount;
                     const personCosts = {};
                     people.forEach(p => { personCosts[p.id] = 0; });
                     const itemBreakdown = items.map(item => {
                         const price = parseFloat(item.price) || 0;
-                        const count = item.consumerIds.length;
-                        const share = count > 0 ? price / count : 0;
-                        item.consumerIds.forEach(cid => { if (personCosts[cid] !== undefined) personCosts[cid] += share; });
+                        const consumers = item.consumerIds.length > 0 ? item.consumerIds : people.map(p => p.id);
+                        const share = consumers.length > 0 ? price / consumers.length : 0;
+                        consumers.forEach(cid => { if (personCosts[cid] !== undefined) personCosts[cid] += share; });
                         return { ...item, share };
                     });
                     const grandTotal = Object.values(personCosts).reduce((a, b) => a + b, 0);
                     const results = people.map(p => {
                         const baseCost = personCosts[p.id];
                         const proportion = grandTotal > 0 ? baseCost / grandTotal : 0;
-                        const extra = (taxAmount + parseFloat(tipAmount || 0)) * proportion;
+                        const extra = (parseFloat(tipAmount || 0) - discountAmount) * proportion;
                         return { ...p, base: baseCost, extra: extra, total: baseCost + extra };
                     });
-                    return { subtotal, taxAmount, total: totalWithAdjustments, results, itemBreakdown, isQuickMode: false };
+                    return { subtotal, discountAmount, total: totalWithAdjustments, results, itemBreakdown, isQuickMode: false };
                 }
-            }, [items, people, taxPercent, tipAmount, quickTotalBill]);
+            }, [items, people, tipAmount, quickTotalBill, discountPercent]);
 
             const copyToWhatsApp = () => {
                 let text = `🍽️ *Bill Summary*\n\n`;
@@ -865,7 +930,7 @@
                     <main id="main-content-scroll" className="flex-1 overflow-y-auto px-6 no-scrollbar pt-4">
                         {step === 1 && <StepPeople people={people} addPerson={addPerson} addMultiplePeople={addMultiplePeople} updatePerson={updatePerson} removePerson={removePerson} />}
                         {step === 2 && <StepItems items={items} people={people} quickTotalBill={quickTotalBill} setQuickTotalBill={setQuickTotalBill} addItem={addItem} updateItem={updateItem} updateItemsBulk={updateItemsBulk} removeItem={removeItem} removeItemsBulk={removeItemsBulk} handleFileUpload={handleFileUpload} isProcessingImage={isProcessingImage} error={error} selectedIds={selectedIds} setSelectedIds={setSelectedIds} />}
-                        {step === 3 && <StepSummary totals={totals} people={people} taxPercent={taxPercent} setTaxPercent={setTaxPercent} tipAmount={tipAmount} setTipAmount={setTipAmount} payerId={payerId} setPayerId={setPayerId} copyToWhatsApp={copyToWhatsApp} downloadAsImage={downloadAsImage} isDownloading={isDownloading} />}
+                        {step === 3 && <StepSummary totals={totals} people={people} tipAmount={tipAmount} setTipAmount={setTipAmount} discountPercent={discountPercent} setDiscountPercent={setDiscountPercent} payerId={payerId} setPayerId={setPayerId} copyToWhatsApp={copyToWhatsApp} downloadAsImage={downloadAsImage} isDownloading={isDownloading} />}
                         {step === 4 && <StepAbout />}
                     </main>
 
